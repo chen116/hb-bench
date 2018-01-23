@@ -1,0 +1,76 @@
+/home/vic/dynamo/parsec-3.0-poet/pkgs/apps/blackscholes/src/blackscholes.c:
+
+
+make
+
+=====================================================================================
+/home/vic/dynamo/parsec-3.0-poet/pkgs/apps/bodytrack/src/TrackingBenchmark/main.cpp:
+
+follow README
+
+
+     in TrackingBenchmark/ParticleFilterPthread.h line 136, change AddGuassinaNoise to this->AddGuassain
+
+
+
+
+to compile:
+
+follow the README from in /bodytrack/src/README  :
+----------------------------------------------------------------
+mkdir objdir
+cd objdir
+/path/to/srcdir/configure [ARGUMENTS...]
+
+OpenMP and regular threading can be enabled by passing --enable-openmp resp.
+--enable-threads to the script, the correct macros will be automatically
+defined. To see a complete list with all supported options, the argument --help
+can be used.
+
+configure will generate all necessary Makefiles to compile and link the
+program. Once it has finished, the program can be built and installed as
+follows:
+
+in objdir
+
+
+then go to objdir/TrackingBenchmark/Makefile line 174:
+
+change to:
+
+LIBS = -lpthread -lhb-shared -lhrm-shared
+
+in objdir/
+
+make
+make install
+----------------------------------------------------------------
+
+
+
+
+
+=====================================================================================
+
+/home/vic/dynamo/parsec-3.0-poet/pkgs/apps/facesim/src/Benchmarks/facesim/main.cpp:    
+
+export PHYSBAM_THREADS=1
+export PHYSBAM='/path/to/facesim/src/'
+nano /path/to/facesim/src/Public_Library/Collision_And_Interactions/TETRAHEDON_HIERARCHY.h line 99,113,120,106, change Thicken_leaf_boxes to this-> Thicken_leaf_boxes
+
+some exit shit error
+
+
+
+
+/home/vic/dynamo/parsec-3.0-poet/pkgs/apps/facesim/src/Public_Library/Solids_And_Fluids/SOLIDS_FLUIDS_DRIVER.cpp:
+=====================================================================================
+
+/home/vic/dynamo/parsec-3.0-poet/pkgs/apps/ferret/src/benchmark/ferret-pthreads.c:
+
+
+=====================================================================================
+
+/home/vic/dynamo/parsec-3.0-poet/pkgs/apps/x264/src/x264.c:
+
+
