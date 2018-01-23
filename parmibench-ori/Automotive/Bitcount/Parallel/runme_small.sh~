@@ -1,0 +1,2 @@
+#!/bin/sh
+./bitcnts_parallel 75000 > output_small.txt

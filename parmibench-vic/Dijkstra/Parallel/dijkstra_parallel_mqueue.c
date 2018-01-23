@@ -296,9 +296,9 @@ int main(int argc, char *argv[]) {
 
 		for (i=0; i < num_runs; i++) {
 			startThreads();			// Start pthreads 	
-			if (i > 10) {
-				heartbeat(heart, i);
-			}
+			// if (i > 10) {
+			heartbeat(heart, i);
+			// }
 		}
 		// startThreads();			/* Start pthreads */	
 	}

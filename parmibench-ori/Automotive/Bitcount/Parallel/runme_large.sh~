@@ -1,0 +1,2 @@
+#!/bin/sh
+./bitcnts_parallel 9999999999

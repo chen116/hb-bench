@@ -1,0 +1,2 @@
+#!/bin/sh
+./bitcnts 112500 > output.dat

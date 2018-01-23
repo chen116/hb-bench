@@ -1,0 +1,7 @@
+FILE = pt.c bitcnt_1_parallel.c
+
+bitcnts: ${FILE} Makefile
+	gcc -static ${FILE} -O3 -o bitcnts_parallel -lpthread
+
+clean:
+	rm -rf bitcnts_parallel output*

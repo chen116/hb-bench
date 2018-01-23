@@ -1,0 +1,163 @@
+/* +++Date last modified: 05-Jul-1997 */
+
+/*
+** bitstring(): print bit pattern of bytes formatted to string.
+**
+** By J. Blauth, Sept. 1992. Hereby placed into the public domain.
+**
+** byze:    value to transform to bitstring.
+** biz:     count of bits to be shown (counted from lowest bit, can be any
+**          even or odd number).
+** strwid:  total width the string shall have. Since between every 4 bits a
+**          blank (0x20) is inserted (not added after lowest bit), width of
+**          bitformat only is (biz+(biz/4-1)). Bits are printed right aligned,
+**          positions from highest bit to start of string filled with blanks.
+**          If value of strwid smaller than space needed to print all bits,
+**          strwid is ignored (e.g.:
+**                bitstr(s,b,16,5) results in 19 chars +'\0').
+**
+**   EXAMPLE:
+**   for (j = 1; j <= 16; j++) { bitstring(s, j, j, 16); puts(s); }
+**       1:                1
+**       2:               10
+**       3:              011
+**       d: 0 0000 0000 1101
+**       e: 00 0000 0000 1110
+**       f: 000 0000 0000 1111
+*/
+
+#include "bitops.h"
+#include "pt_head.h"
+#include <string.h>
+
+char* strs[PROCESSORS];
+int* tasks[PROCESSORS][2];
+
+void bitstring(char* str, int iteration, int strwid,int csize){
+	FUNCARGS* funcArgs = (FUNCARGS*)malloc(sizeof(FUNCARGS));
+	funcArgs->iteration = iteration;
+	funcArgs->strwid = strwid;
+	funcArgs->str = str;
+	funcArgs->csize = csize;
+	startBarrier(&myBarrier);
+	startThreads(2,funcArgs);
+	free(funcArgs);
+}
+
+void* bitstring_thread(void* threadArgs){
+	int i,j=0,x,y;
+	int length=0;
+	THREADARGS* args = (THREADARGS*)threadArgs;
+	int myID = args->id;
+	FUNCARGS* funcArgs = args->funcArgs;
+	int strwid = funcArgs->strwid;
+	char* str = funcArgs->str;
+	long iteration = funcArgs->iteration;
+	int csize = funcArgs->csize;
+	int biz;
+	long byze;
+	for (x = 1L; x <= iteration; x++){
+		actuateBarrier(&myBarrier);
+		char* tmp_str = (char*)malloc(sizeof(char)*(csize-csize/PROCESSORS*(PROCESSORS-1)));
+		strs[myID] = tmp_str;
+		biz = (int)x;
+		byze = x;
+		j = strwid - (biz + (biz >> 2)- (biz % 4 ? 0 : 1));	
+		if(j>0){
+			int start = j/PROCESSORS*myID;
+			int end = j/PROCESSORS*(myID+1)+(myID+1==PROCESSORS&&j%PROCESSORS!=0?j%PROCESSORS:0);
+			for(i=start; i<end; i++){
+				*(str+(x-1)*csize+i) = ' ';
+			}
+		}else{
+			j=0;
+		}
+		for(i=biz/PROCESSORS*(myID+1)+(myID+1==PROCESSORS&&biz%PROCESSORS!=0?biz%PROCESSORS:0)-1; i>=biz/PROCESSORS*myID; i--){
+			*tmp_str++ = ((byze >> i) & 1) + '0';
+			if (!(i % 4) && i){
+				*tmp_str++ = ' ';
+			}
+		}
+		*tmp_str = '\0';
+		actuateBarrier(&myBarrier);
+		if(myID==0){
+			length=0;
+			for(y=PROCESSORS-1;y>=0;y--){
+				memcpy(str+(x-1)*csize+length+j,strs[y],strlen(strs[y]));
+				length += strlen(strs[y]);
+			}
+			*(str+(x-1)*csize+length+j)='\0';
+			printf("%2ld: %s\n", (long)x, str+(x-1)*csize);
+		}
+	}
+}
+
+void divide_task_group(int task,int groups){ // 2m-1,2g, 4m-2,4g, 6m-2,3,6g, 8m-2,4,8g
+	int i=0,j=0;
+	if(groups == PROCESSORS){
+		for(i=0;i<PROCESSORS;i++){
+			tasks[i][0] = task/PROCESSORS* (i);
+			tasks[i][1] = task/RPOCESSORS* (i+1) + (i+1==PROCESSORS&task%PROCESSORS!=0?task%PROCESSORS:0);
+		}
+		return 1;
+	}
+	if(PROCESSORS==2 || PROCESSORS==4){
+		for(i=0;i<PROCESSORS;i++){
+			j = i<groups-PROCESSORS/groups?0:1;
+			tasks[i][0] = task/groups * (j);
+			tasks[i][1] = task/groups * (j+1) + (j+1==groups&task%groups!=0?task%groups:0);
+		}
+	}else if(PROCESSORS==6){
+		for(i=0;i<PROCESSORS;i++){
+			if(groups==2){
+				j = i<3?0:1;
+			}else if(groups == 3){
+				if(i<2){
+					j=0;
+				}else if(i>1 && i<4){
+					j=1;
+				}else if(i>3){
+					j=2;
+				}
+			}
+			tasks[i][0] = task/groups * (j);
+			tasks[i][1] = task/groups * (j+1) + (j+1==groups&task%groups!=0?task%groups:0);
+		}
+	}else if(PROCESSORS==8){
+		for(i=0;i<PROCESSORS;i++){
+			if(groups==2){
+				j = i<4?0:1;
+			}else if(groups == 4){
+				if(i<2){
+					j=0;
+				}else if(i>1 && i<4){
+					j=1;
+				}else if(i>3 && i<6){
+					j=2;
+				}else if(i>5 && i<8){
+					j=3;
+				}
+			}
+			tasks[i][0] = task/groups * (j);
+			tasks[i][1] = task/groups * (j+1) + (j+1==groups&task%groups!=0?task%groups:0);
+		}
+	}
+}
+
+//#ifdef TEST
+
+#include <stdlib.h>
+
+int main(void){
+	int i;
+	long j;
+	int strwid = 32;
+	int iteration = 32; //tasks
+	int csize = 80;
+	char s[iteration][csize];
+	//bitstring(s[0],iteration, strwid,csize);
+	divide_task_group();
+	return EXIT_SUCCESS;
+}
+
+//#endif /* TEST */
