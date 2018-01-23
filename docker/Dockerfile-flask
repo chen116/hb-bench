@@ -1,0 +1,21 @@
+# Instructions copied from - https://hub.docker.com/_/python/
+FROM python:3-onbuild
+RUN apt-get update
+#RUN apt-get -y install build-essential libnuma-dev
+
+#RUN apt-get -y install apt-utils
+#RUN apt-get -y install sudo
+#RUN cat /etc/os-release
+#RUN cd stream && make all
+ENV  HEARTBEAT_ENABLED_DIR /usr/src/app/heartbeats
+RUN cd heartbeats && make clean && make uninstall && make && make install && ldconfig 
+RUN cd susan && make
+# tell the port number the container should expose
+EXPOSE 5000
+
+# run the command
+#CMD ["ls"]
+#CMD ["sudo","./rt-tests/cyclictest", "-p80","-n","-D","3","-h300"]
+CMD ["python", "./app.py"]
+#CMD ["sysbench","--test=cpu","--cpu-max-prime=2000","run"]
+#CMD ["sudo","./ltp/testcases/realtime/run.sh","-t","perf","-l","1"]

@@ -1,0 +1,20 @@
+FROM ubuntu:16.04
+#sudo docker build -t chen116/mibench/network/dijkstra .
+# RUN apt-get install all_my_dependencies
+RUN apt-get update
+RUN apt-get -y install build-essential libnuma-dev
+#RUN apt-get -y install sudo
+#ADD dijkstra_small /
+#ADD input.dat /
+COPY linpack /
+#COPY stream /stream
+#RUN cd stream && make all 
+
+#CMD ["ls"]
+#CMD ["./dijkstra_small","input.dat",">","output.txt"]
+#CMD ["./dijkstra_small","input.dat"]
+#CMD ["touch","hey"]
+#CMD ["ls"]
+#CMD tail -f /dev/null
+#CMD ["./stream/stream_c.exe"]
+CMD ["./runme_xeon64"]
