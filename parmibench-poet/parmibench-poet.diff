@@ -1,0 +1,347 @@
+diff --git a/Network/Dijkstra/Parallel/Makefile b/Network/Dijkstra/Parallel/Makefile
+index 41c2f75..fbc6f76 100644
+--- a/Network/Dijkstra/Parallel/Makefile
++++ b/Network/Dijkstra/Parallel/Makefile
+@@ -1,13 +1,18 @@
++CC = gcc
++CFLAGS = -O3 -Wall
++LDFLAGS = 
++LIBS = -lpoet -lhb-acc-pow-shared -lhb-energy-msr -lpthread -lrt -lm
++
+ all:  dijkstra_parallel_mqueue dijkstra_parallel_squeue dijkstra_allpair
+ 
+ dijkstra_parallel_mqueue: dijkstra_parallel_mqueue.c
+-	gcc -lpthread dijkstra_parallel_mqueue.c -o dijkstra_parallel_mqueue
++	$(CC) dijkstra_parallel_mqueue.c -o $@ $(LDFLAGS) $(LIBS)
+ 
+ dijkstra_parallel_squeue: dijkstra_parallel_squeue.c
+-	gcc -lpthread dijkstra_parallel_squeue.c -o dijkstra_parallel_squeue
++	$(CC) dijkstra_parallel_squeue.c -o $@ $(LDFLAGS) $(LIBS)
+ 
+ dijkstra_allpair: dijkstra_allpair.c
+-	gcc -lpthread dijkstra_allpair.c -o dijkstra_allpair
++	$(CC) dijkstra_allpair.c -o $@ $(LDFLAGS) $(LIBS)
+ 
+ clean:
+ 	rm -rf dijkstra_parallel_mqueue dijkstra_parallel_squeue dijkstra_allpair output*
+diff --git a/Network/Dijkstra/Parallel/dijkstra_parallel_mqueue.c b/Network/Dijkstra/Parallel/dijkstra_parallel_mqueue.c
+index f0e3958..5adb61c 100644
+--- a/Network/Dijkstra/Parallel/dijkstra_parallel_mqueue.c
++++ b/Network/Dijkstra/Parallel/dijkstra_parallel_mqueue.c
+@@ -20,7 +20,20 @@
+ 
+ #define NUM_NODES                          2000	//16 for small input; 2000 for large input
+ #define NONE                               9999	//Maximum
+-#define PROCESSORS				 8	//The amount of processor
++#define PROCESSORS				 4	//The amount of processor
++
++#define HB_ENERGY_IMPL
++#include <heartbeats/hb-energy.h>
++#include <heartbeats/heartbeat-accuracy-power.h>
++#include <poet/poet.h>
++#include <poet/poet_config.h>
++#define PREFIX "DIJKSTRA"
++#define USE_POET // Power and performance control
++heartbeat_t* heart;
++poet_state* state;
++static poet_control_state_t* control_states;
++static poet_cpu_state_t* cpu_states;
++unsigned int num_runs = 1000;
+ 
+ /* define a thread pool */
+ struct _THREADPOOL{
+@@ -90,6 +103,77 @@ void printResult();
+ void enqueue (int, int, int, int);
+ void dequeue (int,int*, int*, int*);
+ 
++void hb_poet_init() {
++    float min_heartrate;
++    float max_heartrate;
++    int window_size;
++    double power_target;
++    unsigned int nstates;
++
++    if(getenv(PREFIX"_MIN_HEART_RATE") == NULL) {
++      min_heartrate = 0.0;
++    }
++    else {
++      min_heartrate = atof(getenv(PREFIX"_MIN_HEART_RATE"));
++    }
++    if(getenv(PREFIX"_MAX_HEART_RATE") == NULL) {
++      max_heartrate = 100.0;
++    }
++    else {
++      max_heartrate = atof(getenv(PREFIX"_MAX_HEART_RATE"));
++    }
++    if(getenv(PREFIX"_WINDOW_SIZE") == NULL) {
++      window_size = 30;
++    }
++    else {
++      window_size = atoi(getenv(PREFIX"_WINDOW_SIZE"));
++    }
++    if(getenv(PREFIX"_POWER_TARGET") == NULL) {
++      power_target = 70;
++    }
++    else {
++      power_target = atof(getenv(PREFIX"_POWER_TARGET"));
++    }
++
++    printf("init heartbeat with %f %f %d\n", min_heartrate, max_heartrate, window_size);
++
++    heart = heartbeat_acc_pow_init(window_size, 100, "heartbeat.log",
++                                   min_heartrate, max_heartrate,
++                                   0, 100,
++                                   1, hb_energy_impl_alloc(), power_target, power_target);
++    if (heart == NULL) {
++      fprintf(stderr, "Failed to init heartbeat.\n");
++      exit(1);
++    }
++#ifdef USE_POET
++    if (get_control_states(NULL, &control_states, &nstates)) {
++      fprintf(stderr, "Failed to load control states.\n");
++      exit(1);
++    }
++    if (get_cpu_states(NULL, &cpu_states, &nstates)) {
++      fprintf(stderr, "Failed to load cpu states.\n");
++      exit(1);
++    }
++    state = poet_init(heart, nstates, control_states, cpu_states, &apply_cpu_config, &get_current_cpu_state, 1, "poet.log");
++    if (state == NULL) {
++      fprintf(stderr, "Failed to init poet.\n");
++      exit(1);
++    }
++#endif
++   printf("heartbeat init'd\n");
++
++}
++
++void hb_poet_finish() {
++#ifdef USE_POET
++    poet_destroy(state);
++    free(control_states);
++    free(cpu_states);
++#endif
++    heartbeat_finish(heart);
++    printf("heartbeat finished\n");
++}
++
+ void print_path(NODE *rgnNodes, int chNode){
+ 	if (rgnNodes[chNode].iPrev != NONE){
+ 		print_path(rgnNodes, rgnNodes[chNode].iPrev);
+@@ -273,14 +357,24 @@ int main(int argc, char *argv[]) {
+   	}
+ 	fclose(fp);
+ 	chStart=0,chEnd=1999; //15 for small input; 1999 for large input
++	hb_poet_init();
+ 	if (chStart == chEnd) {
+ 		printf("Shortest path is 0 in cost. Just stay where you are.\n");
+ 		
+ 	}else{
+ 		pthread_mutex_init(&pt_mutex, NULL);
+ 		startBarrier(&myBarrier);	/* Start barrier 	*/
+-		startThreads();			/* Start pthreads */	
++		for (i=0; i < num_runs; i++) {
++			startThreads();			/* Start pthreads */	
++			if (i > 10) {
++				heartbeat_acc(heart, i, 1);
++#ifdef USE_POET
++				poet_apply_control(state);
++#endif
++			}
++		}
+ 	}
+ 	printResult();
++	hb_poet_finish();
+ 	return 0;
+ }
+diff --git a/Security/sha/Makefile b/Security/sha/Makefile
+index 74d1b16..fe07779 100644
+--- a/Security/sha/Makefile
++++ b/Security/sha/Makefile
+@@ -5,9 +5,11 @@
+ 
+ CC = gcc
+ CFLAGS = -O3 -Wall
++LDFLAGS = 
++LIBS = -lpoet -lhb-acc-pow-shared -lhb-energy-msr -lpthread -lrt -lm
+ 
+ sha:	sha_driver.o sha.o
+-	$(CC) -o $@ -lpthread sha_driver.o sha.o
++	$(CC) -o $@ sha_driver.o sha.o $(LDFLAGS) $(LIBS)
+ 	strip $@
+ 
+ clean:
+diff --git a/Security/sha/sha_driver.c b/Security/sha/sha_driver.c
+index 5779fa7..12b1fd8 100644
+--- a/Security/sha/sha_driver.c
++++ b/Security/sha/sha_driver.c
+@@ -23,6 +23,22 @@
+ #include <pthread.h>
+ #include "sha.h"
+ 
++#define HB_ENERGY_IMPL
++#include <heartbeats/hb-energy.h>
++#include <heartbeats/heartbeat-accuracy-power.h>
++#include <poet/poet.h>
++#include <poet/poet_config.h>
++
++#define PREFIX "SHA"
++#define USE_POET // Power and performance control
++
++heartbeat_t* heart;
++poet_state* state;
++static poet_control_state_t* control_states;
++static poet_cpu_state_t* cpu_states;
++unsigned int num_runs = 1000;
++char* path;
++
+ #define MAX_NO_FILES 16
+ #define MAX_WORKERS 8
+ #define PRINT 0
+@@ -54,13 +70,86 @@ pthread_t workers[MAX_WORKERS];
+ static int partition_size;
+ static parameters paramsArr[MAX_WORKERS];
+ 
++void hb_poet_init() {
++    float min_heartrate;
++    float max_heartrate;
++    int window_size;
++    double power_target;
++    unsigned int nstates;
++
++    if(getenv(PREFIX"_MIN_HEART_RATE") == NULL) {
++      min_heartrate = 0.0;
++    }
++    else {
++      min_heartrate = atof(getenv(PREFIX"_MIN_HEART_RATE"));
++    }
++    if(getenv(PREFIX"_MAX_HEART_RATE") == NULL) {
++      max_heartrate = 100.0;
++    }
++    else {
++      max_heartrate = atof(getenv(PREFIX"_MAX_HEART_RATE"));
++    }
++    if(getenv(PREFIX"_WINDOW_SIZE") == NULL) {
++      window_size = 30;
++    }
++    else {
++      window_size = atoi(getenv(PREFIX"_WINDOW_SIZE"));
++    }
++    if(getenv(PREFIX"_POWER_TARGET") == NULL) {
++      power_target = 70;
++    }
++    else {
++      power_target = atof(getenv(PREFIX"_POWER_TARGET"));
++    }
++
++    printf("init heartbeat with %f %f %d\n", min_heartrate, max_heartrate, window_size);
++
++    heart = heartbeat_acc_pow_init(window_size, 100, "heartbeat.log",
++                                   min_heartrate, max_heartrate,
++                                   0, 100,
++                                   1, hb_energy_impl_alloc(), power_target, power_target);
++    if (heart == NULL) {
++      fprintf(stderr, "Failed to init heartbeat.\n");
++      exit(1);
++    }
++#ifdef USE_POET
++    if (get_control_states(NULL, &control_states, &nstates)) {
++      fprintf(stderr, "Failed to load control states.\n");
++      exit(1);
++    }
++    if (get_cpu_states(NULL, &cpu_states, &nstates)) {
++      fprintf(stderr, "Failed to load cpu states.\n");
++      exit(1);
++    }
++    state = poet_init(heart, nstates, control_states, cpu_states, &apply_cpu_config, &get_current_cpu_state, 1, "poet.log");
++    if (state == NULL) {
++      fprintf(stderr, "Failed to init poet.\n");
++      exit(1);
++    }
++#endif
++   printf("heartbeat init'd\n");
++
++}
++
++void hb_poet_finish() {
++#ifdef USE_POET
++    poet_destroy(state);
++    free(control_states);
++    free(cpu_states);
++#endif
++    heartbeat_finish(heart);
++    printf("heartbeat finished\n");
++}
+ 
+ void readFilesData(){
+ 	FILE *fin;
+ 	int index;
++	char file[200];
+ 	 
+ 	 for ( index=0; index<no_files; index++){
+-	      if ((fin = fopen(in_file_list[index], "rb")) == NULL) {
++	      strcpy(file, path);
++	      strcat(file, in_file_list[index]);
++	      if ((fin = fopen(file, "rb")) == NULL) {
+ 					printf("Error opening %s for reading\n", in_file_list[index]);
+ 					}		
+ 	 			// Calculate File Size
+@@ -170,12 +259,24 @@ void init(){
+ 
+ void parallel_process(){
+ 	 		printf("*******  Digest Calucation:Parallel Process  *******\n");
++            int i;
++
++            hb_poet_init();
+        
+ 	    init();
+ 	    init_workers();
+-	    createWorkers();
+-	    waitForWorkersToFinish();
+-	
++	    for (i = 0; i < num_runs; i++) {
++	      createWorkers();
++	      waitForWorkersToFinish();
++	      if (i >= 12 && i % 2 == 0) {
++	      heartbeat_acc(heart, i, 1);
++#ifdef USE_POET
++	      poet_apply_control(state);
++#endif
++	      }
++	    }
++
++	    hb_poet_finish();
+ }
+ 
+ void sequential_process(){
+@@ -204,19 +305,27 @@ void sequential_process(){
+ int main(int argc,char *argv[])
+ {
+ 	char *token;
+-      if (argc<2 ||argc>3){
++      if (argc<2 ||argc>4){
+       	  printf("|-----------------------------------------------------------------------|\n");
+       	  printf("	Error: Insufficient Parameters.                             \n");
+       	  printf("	Maximum Workers are 8. Number of workers should be even!\n");
+       	  printf("	Commands to run!                             \n");
+-      	  printf("	Command Format: OjbectFileName -Sequential(S)/Parallel(P) -Workers!\n");
++      	  printf("	Command Format: OjbectFileName -Sequential(S)/Parallel(P) -Workers -Runs!\n");
+       	  printf("	Example: sequential SHA: ' ./sha -S   '!                             \n");
+-      	  printf("	Example: parallel SHA  : ' ./sha -P -2 '!\n");
++      	  printf("	Example: parallel SHA  : ' ./sha -P -2 -1000'!\n");
+       	  printf("|---------------------------------------------------------------------- |\n");
+       	  exit(0);
+       }else {
+       	    
+       	    token=argv[1];
++            // get current path (where inputs files are)
++            char* lslash = strrchr(argv[0], '/');
++            if (lslash) {
++              *(lslash + 1) = '\0';
++              path=argv[0];
++            } else {
++              path = "";
++            }
+       	    if (*token=='-') {
+       	    	   token++;
+       	    	  if (strcmp(token,"S")==0){
