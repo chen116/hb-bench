@@ -1,0 +1,60 @@
+Wed Jan 10 05:38:14 PST 2018
+Sample data file lininput_xeon64.
+
+Current date/time: Wed Jan 10 05:38:14 2018
+
+CPU frequency:    1.370 GHz
+Number of CPUs: 1
+Number of cores: 4
+Number of threads: 4
+
+Parameters are set to:
+
+Number of tests: 2
+Number of equations to solve (problem size) : 1000  3000 
+Leading dimension of array                  : 2000  4000 
+Number of trials to run                     : 10    15   
+Data alignment value (in Kbytes)            : 5     7    
+
+Maximum memory requested that can be used=96087168, at the size=3000
+
+=================== Timing linear equation system solver ===================
+
+Size   LDA    Align. Time(s)    GFlops   Residual     Residual(norm) Check
+1000   2000   5      0.031      21.4112  9.419757e-13 3.212379e-02   pass
+1000   2000   5      0.030      22.6137  9.419757e-13 3.212379e-02   pass
+1000   2000   5      0.030      22.3803  9.419757e-13 3.212379e-02   pass
+1000   2000   5      0.030      22.5109  9.419757e-13 3.212379e-02   pass
+1000   2000   5      0.030      22.4947  9.419757e-13 3.212379e-02   pass
+1000   2000   5      0.030      22.4674  9.419757e-13 3.212379e-02   pass
+1000   2000   5      0.029      23.2247  9.419757e-13 3.212379e-02   pass
+1000   2000   5      0.029      22.7359  9.419757e-13 3.212379e-02   pass
+1000   2000   5      0.029      22.7123  9.419757e-13 3.212379e-02   pass
+1000   2000   5      0.030      22.5395  9.419757e-13 3.212379e-02   pass
+3000   4000   7      0.690      26.1256  8.375411e-12 3.225170e-02   pass
+3000   4000   7      0.690      26.1152  8.375411e-12 3.225170e-02   pass
+3000   4000   7      0.689      26.1448  8.375411e-12 3.225170e-02   pass
+3000   4000   7      0.690      26.1208  8.375411e-12 3.225170e-02   pass
+3000   4000   7      0.691      26.0784  8.375411e-12 3.225170e-02   pass
+3000   4000   7      0.689      26.1394  8.375411e-12 3.225170e-02   pass
+3000   4000   7      0.689      26.1637  8.375411e-12 3.225170e-02   pass
+3000   4000   7      0.689      26.1561  8.375411e-12 3.225170e-02   pass
+3000   4000   7      0.690      26.1119  8.375411e-12 3.225170e-02   pass
+3000   4000   7      0.690      26.1203  8.375411e-12 3.225170e-02   pass
+3000   4000   7      0.689      26.1514  8.375411e-12 3.225170e-02   pass
+3000   4000   7      0.691      26.0757  8.375411e-12 3.225170e-02   pass
+3000   4000   7      0.690      26.1315  8.375411e-12 3.225170e-02   pass
+3000   4000   7      0.690      26.1312  8.375411e-12 3.225170e-02   pass
+3000   4000   7      0.689      26.1445  8.375411e-12 3.225170e-02   pass
+
+Performance Summary (GFlops)
+
+Size   LDA    Align.  Average  Maximal
+1000   2000   5       22.5091  23.2247 
+3000   4000   7       26.1274  26.1637 
+
+Residual checks PASSED
+
+End of tests
+
+Done: Wed Jan 10 05:38:31 PST 2018

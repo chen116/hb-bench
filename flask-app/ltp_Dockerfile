@@ -1,0 +1,22 @@
+# Instructions copied from - https://hub.docker.com/_/python/
+FROM python:3-onbuild
+RUN apt-get update
+#RUN apt-get -y install apt-utils
+RUN apt-get -y install sudo
+#RUN apt-get -y install build-essential libnuma-dev 
+#RUN git clone git://git.kernel.org/pub/scm/linux/kernel/git/clrkwllms/rt-tests.git
+#RUN cd rt-tests && make cyclictest
+#RUN cp ./rt-tests/cyclictest /usr/bin/
+RUN git clone https://github.com/linux-test-project/ltp.git
+#RUN apt-get install automake
+RUN cd ltp && make autotools && ./configure
+RUN cd ltp/testcases/realtime && ./configure && make
+RUN cat /etc/os-release
+# tell the port number the container should expose
+EXPOSE 5000
+
+# run the command
+#CMD ["ls"]
+#CMD ["sudo","./rt-tests/cyclictest", "-p80","-n","-D","3","-h300"]
+CMD ["python", "./app.py"]
+#CMD ["sudo","./ltp/testcases/realtime/run.sh","-t","perf","-l","1"]
