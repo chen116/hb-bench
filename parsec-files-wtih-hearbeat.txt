@@ -50,7 +50,9 @@ make
 make install
 ----------------------------------------------------------------
 
+in pnjdir/Trackingbenchmark
 
+./bodytrack ..sequenceB_261/ 4 260 3000 8 > vicout.txt
 
 
 
