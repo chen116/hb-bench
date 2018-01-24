@@ -57,7 +57,7 @@ char* out_file_list[]={"out_file1.txt","out_file2.txt","out_file3.txt","out_file
 
 
 int no_files=16;
-int no_workers=8;
+int no_workers=4;
 
 pthread_attr_t string_attr;
 pthread_mutex_t string_mutex;
