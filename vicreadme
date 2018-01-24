@@ -85,3 +85,26 @@ heartbeat_finish(heart);
        printf("heartbeat: instant rate: %f\n",hb_get_instant_rate(heart) );
 
         }
+
+DOCKER:
+
+
+so with dockerfile setup, without the CMD,
+
+sudo docker build -t chen116/hb-test . && sudo docker run -d -t chen116/hb-test
+
+sudo docker ps
+
+(find docker id)
+
+sudo docker exec -it (docker id) /bin/bash
+
+go run stuff
+
+docker cp <containerId>:/file/path/within/container /host/path/target
+
+
+sudo docker stop (docker id)
+
+sudo docker ps -a | grep Created | cut -d ' ' -f 1 | xargs sudo docker rm
+sudo docker ps -a | grep Exited | cut -d ' ' -f 1 | xargs sudo docker rm

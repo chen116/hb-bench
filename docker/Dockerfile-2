@@ -6,15 +6,19 @@ RUN apt-get -y install build-essential libnuma-dev
 #RUN apt-get -y install sudo
 #ADD dijkstra_small /
 #ADD input.dat /
-COPY linpack /
-#COPY stream /stream
-#RUN cd stream && make all 
+#COPY linpack /
+COPY heartbeats /heartbeats
+ENV  HEARTBEAT_ENABLED_DIR /heartbeats/hbed
+RUN cd heartbeats && make clean && make uninstall && make && make install && ld$
+COPY stream-vic /stream-vic
+RUN cd stream-vic && make
 
+#CMD ["pwd"]
 #CMD ["ls"]
 #CMD ["./dijkstra_small","input.dat",">","output.txt"]
 #CMD ["./dijkstra_small","input.dat"]
 #CMD ["touch","hey"]
 #CMD ["ls"]
 #CMD tail -f /dev/null
-#CMD ["./stream/stream_c.exe"]
-CMD ["./runme_xeon64"]
+#CMD ["./stream-vic/vic && cat ./vic.log"]
+#CMD ["cat","./vic.log"]

@@ -20,7 +20,7 @@
 
 #define NUM_NODES                          2000	//16 for small input; 2000 for large input
 #define NONE                               9999	//Maximum
-#define PROCESSORS				 8	//The amount of processor
+#define PROCESSORS				 4	//The amount of processor
 
 #include <heartbeats/heartbeat.h>
 

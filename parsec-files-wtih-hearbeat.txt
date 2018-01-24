@@ -40,7 +40,9 @@ change to:
 
 LIBS = -lpthread -lhb-shared -lhrm-shared
 
-sed -i 's/LIBS\s=\s-lpthread/LIBS = -lpthread -lhb-shared -lhrm-shared/g' objdir/TrackingBenchmark/Makefile
+or do this:
+
+sed -i 's/LIBS\s=\s-lpthread/LIBS = -lpthread -lhb-shared -lhrm-shared/g' ./TrackingBenchmark/Makefile
 
 in objdir/
 
